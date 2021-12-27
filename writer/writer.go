@@ -3,10 +3,10 @@ package writer
 import "io"
 
 type CodeWriter struct {
-	out io.WriteCloser
+	out io.Writer
 }
 
-func NewCodeWriter(out io.WriteCloser) *CodeWriter {
+func NewCodeWriter(out io.Writer) *CodeWriter {
 	return &CodeWriter{out: out}
 }
 
@@ -20,8 +20,4 @@ func (cw CodeWriter) WriteArithmetic(command string) {
 
 func (cw CodeWriter) WritePushPop(command int, segment string, index int) {
 	// do something
-}
-
-func (cw CodeWriter) Close() {
-	cw.out.Close()
 }
