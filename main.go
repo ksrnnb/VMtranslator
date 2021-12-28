@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/ksrnnb/VMtranslator/parser"
 	"github.com/ksrnnb/VMtranslator/writer"
 )
 
@@ -12,7 +15,7 @@ func main() {
 	err := run()
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 }
@@ -30,8 +33,6 @@ func run() error {
 		return fmt.Errorf("%s: cannot read file or directory: %s", args[0], args[1])
 	}
 
-	fmt.Println("fileName: ", fileInfo.Name())
-
 	outFileName := strings.Split(fileInfo.Name(), ".")[0] + ".asm"
 	file, err := os.Create(outFileName)
 
@@ -41,17 +42,67 @@ func run() error {
 
 	defer file.Close()
 
-	writer.NewCodeWriter(file)
+	cw := writer.NewCodeWriter(file)
 
-	// p := parser.NewParser(f)
+	if fileInfo.IsDir() {
+		dirFunc(args[1], cw)
+	} else {
+		if !isVmFile(args[1]) {
+			return fmt.Errorf("%s: file is not vm file: %s", args[0], args[1])
+		}
 
-	// for {
-	// 	if !p.HasMoreCommands() {
-	// 		break
-	// 	}
-
-	// 	p.Advance()
-	// }
+		handleFile(args[1])
+	}
 
 	return nil
+}
+
+func isVmFile(path string) bool {
+	return filepath.Ext(path) == ".vm"
+}
+
+func dirFunc(root string, cw *writer.CodeWriter) error {
+	err := filepath.Walk(root,
+		func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return fmt.Errorf("walk function cannot start: %v", err)
+			}
+
+			if info.IsDir() {
+				return nil
+			}
+
+			if !isVmFile(path) {
+				return nil
+			}
+
+			return handleFile(path)
+		})
+
+	if err != nil {
+		return fmt.Errorf("walk function error: %v", err)
+	}
+
+	return nil
+}
+
+func handleFile(path string) error {
+	f, err := os.Open(path)
+
+	if err != nil {
+		return err
+	}
+
+	parser := parser.NewParser(f)
+
+	for {
+		if !parser.HasMoreCommands() {
+			break
+		}
+
+		parser.Advance()
+		fmt.Println(parser.CommandType())
+	}
+
+	return err
 }
