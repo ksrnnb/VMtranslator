@@ -39,7 +39,7 @@ func NewParser(input io.Reader) *Parser {
 }
 
 func (p Parser) HasMoreCommands() bool {
-	return p.isDone
+	return !p.isDone
 }
 
 func (p *Parser) Advance() {
@@ -49,6 +49,20 @@ func (p *Parser) Advance() {
 
 	if !p.scanner.Scan() {
 		p.isDone = true
+		return
+	}
+
+	cmd := p.scanner.Text()
+
+	trimmedCmd := strings.Trim(cmd, " ")
+
+	if len(trimmedCmd) == 0 {
+		p.Advance()
+		return
+	}
+
+	if trimmedCmd[0] == '/' && trimmedCmd[1] == '/' {
+		p.Advance()
 		return
 	}
 
