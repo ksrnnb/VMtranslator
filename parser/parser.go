@@ -7,6 +7,8 @@ import (
 	"io"
 	"strconv"
 	"strings"
+
+	"github.com/ksrnnb/VMtranslator/command"
 )
 
 type Parser struct {
@@ -15,18 +17,6 @@ type Parser struct {
 	isDone         bool
 	scanner        *bufio.Scanner
 }
-
-const (
-	C_ARITHMETIC = iota
-	C_PUSH
-	C_POP
-	C_LABEL
-	C_GOTO
-	C_IF
-	C_FUNCTION
-	C_RETURN
-	C_CALL
-)
 
 func NewParser(input io.Reader) *Parser {
 	scanner := bufio.NewScanner(input)
@@ -74,23 +64,23 @@ func (p Parser) CommandType() (int, error) {
 
 	switch commands[0] {
 	case "push":
-		return C_PUSH, nil
+		return command.C_PUSH, nil
 	case "pop":
-		return C_POP, nil
+		return command.C_POP, nil
 	case "label":
-		return C_LABEL, nil
+		return command.C_LABEL, nil
 	case "goto":
-		return C_GOTO, nil
+		return command.C_GOTO, nil
 	case "if-goto":
-		return C_IF, nil
+		return command.C_IF, nil
 	case "function":
-		return C_FUNCTION, nil
+		return command.C_FUNCTION, nil
 	case "call":
-		return C_CALL, nil
+		return command.C_CALL, nil
 	case "return":
-		return C_RETURN, nil
+		return command.C_RETURN, nil
 	case "add", "sub", "neg", "eq", "gt", "lt", "and", "or", "not":
-		return C_ARITHMETIC, nil
+		return command.C_ARITHMETIC, nil
 	}
 
 	return 0, errors.New("command type is invalid")
@@ -106,7 +96,7 @@ func (p Parser) Arg1() (string, error) {
 
 	commands := strings.Split(p.currentCommand, " ")
 
-	if cmdType == C_ARITHMETIC {
+	if cmdType == command.C_ARITHMETIC {
 		return commands[0], nil
 	}
 
@@ -121,10 +111,10 @@ func (p Parser) Arg2() (int, error) {
 		return 0, err
 	}
 
-	if !(cmdType == C_PUSH ||
-		cmdType == C_POP ||
-		cmdType == C_FUNCTION ||
-		cmdType == C_CALL) {
+	if !(cmdType == command.C_PUSH ||
+		cmdType == command.C_POP ||
+		cmdType == command.C_FUNCTION ||
+		cmdType == command.C_CALL) {
 		return 0, fmt.Errorf("arg2 cannot be called in command type %v", cmdType)
 	}
 

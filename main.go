@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ksrnnb/VMtranslator/command"
 	"github.com/ksrnnb/VMtranslator/parser"
 	"github.com/ksrnnb/VMtranslator/writer"
 )
@@ -51,7 +52,7 @@ func run() error {
 			return fmt.Errorf("%s: file is not vm file: %s", args[0], args[1])
 		}
 
-		handleFile(args[1])
+		handleFile(args[1], cw)
 	}
 
 	return nil
@@ -76,7 +77,7 @@ func dirFunc(root string, cw *writer.CodeWriter) error {
 				return nil
 			}
 
-			return handleFile(path)
+			return handleFile(path, cw)
 		})
 
 	if err != nil {
@@ -86,7 +87,7 @@ func dirFunc(root string, cw *writer.CodeWriter) error {
 	return nil
 }
 
-func handleFile(path string) error {
+func handleFile(path string, cw *writer.CodeWriter) error {
 	f, err := os.Open(path)
 
 	if err != nil {
@@ -101,7 +102,28 @@ func handleFile(path string) error {
 		}
 
 		parser.Advance()
-		fmt.Println(parser.CommandType())
+
+		cmdType, err := parser.CommandType()
+
+		if err != nil {
+			return fmt.Errorf("handle file: %v", err)
+		}
+
+		if cmdType == command.C_PUSH || cmdType == command.C_POP {
+			arg1, err := parser.Arg1()
+
+			if err != nil {
+				return fmt.Errorf("handle file: %v", err)
+			}
+
+			arg2, err := parser.Arg2()
+
+			if err != nil {
+				return fmt.Errorf("handle file: %v", err)
+			}
+
+			cw.WritePushPop(cmdType, arg1, arg2)
+		}
 	}
 
 	return err
