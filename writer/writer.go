@@ -33,15 +33,32 @@ func (cw CodeWriter) WritePushPop(cmd int, segment string, index int) {
 }
 
 func (cw *CodeWriter) writePush(segment string, index int) {
-	cw.write(fmt.Sprintf("@%d\nD=A\n", index))
+	cw.write([]string{
+		fmt.Sprintf("@%d", index),
+		"D=A",
+	})
+
+	cw.write([]string{
+		"@SP",   // SPは0
+		"A=M",   // AレジスタにRAM[0]を代入、すなわちSPが指すアドレスをAに代入 -> 次からMのアドレスをSPの指す位置に変更
+		"M=D",   // Dの値をstackにpushする
+		"@SP",   // Mのアドレスを0に戻す
+		"M=M+1", // SPが指すアドレスをインクリメントする
+	})
 }
 
 func (cw *CodeWriter) writePop(segment string, index int) {
 	// do something
 }
 
-func (cw CodeWriter) write(str string) error {
-	_, err := cw.out.Write([]byte(str))
+func (cw CodeWriter) write(strs []string) error {
+	for _, str := range strs {
+		_, err := cw.out.Write([]byte(str + "\n"))
 
-	return err
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
