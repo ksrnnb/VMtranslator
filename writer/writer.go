@@ -21,7 +21,10 @@ func (cw *CodeWriter) SetFileName(fileName string) {
 }
 
 func (cw CodeWriter) WriteArithmetic(cmd string) {
-	// do something
+	switch cmd {
+	case "add":
+		cw.writeAdd()
+	}
 }
 
 func (cw CodeWriter) WritePushPop(cmd int, segment string, index int) {
@@ -38,6 +41,30 @@ func (cw *CodeWriter) writePush(segment string, index int) {
 		"D=A",
 	})
 
+	cw.writePushDRegister()
+}
+
+func (cw *CodeWriter) writePop(segment string, index int) {
+
+}
+
+func (cw *CodeWriter) writeAdd() {
+	cw.write([]string{
+		"@SP",   // はじめのRAM[0]=r0とする
+		"M=M-1", // SPをデクリメントしてデータが入っている一番上の位置に移動(r0-1)
+		"A=M",   // A = RAM[r0-1] => M = RAM[r0-1]
+		"D=M",   // D = RAM[r0-1]
+		"@SP",   // A = 0, M = RAM[0] = r0-1
+		"M=M-1", // M = r0-2
+		"A=M",   // A = r0-2
+		"D=D+M", // D = RAM[r0-1] + RAM[r0-2]
+	})
+
+	cw.writePushDRegister()
+}
+
+// Dレジスタの値をpushする
+func (cw *CodeWriter) writePushDRegister() {
 	cw.write([]string{
 		"@SP",   // SPは0
 		"A=M",   // AレジスタにRAM[0]を代入、すなわちSPが指すアドレスをAに代入 -> 次からMのアドレスをSPの指す位置に変更
@@ -47,11 +74,7 @@ func (cw *CodeWriter) writePush(segment string, index int) {
 	})
 }
 
-func (cw *CodeWriter) writePop(segment string, index int) {
-	// do something
-}
-
-func (cw CodeWriter) write(strs []string) error {
+func (cw *CodeWriter) write(strs []string) error {
 	for _, str := range strs {
 		_, err := cw.out.Write([]byte(str + "\n"))
 

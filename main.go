@@ -97,11 +97,11 @@ func handleFile(path string, cw *writer.CodeWriter) error {
 	parser := parser.NewParser(f)
 
 	for {
+		parser.Advance()
+
 		if !parser.HasMoreCommands() {
 			break
 		}
-
-		parser.Advance()
 
 		cmdType, err := parser.CommandType()
 
@@ -109,22 +109,45 @@ func handleFile(path string, cw *writer.CodeWriter) error {
 			return fmt.Errorf("handle file: %v", err)
 		}
 
-		if cmdType == command.C_PUSH || cmdType == command.C_POP {
-			arg1, err := parser.Arg1()
+		switch cmdType {
+		case command.C_PUSH, command.C_POP:
+			err = handlePushPop(cmdType, parser, cw)
+		case command.C_ARITHMETIC:
+			err = handleArithmetic(parser, cw)
+		}
 
-			if err != nil {
-				return fmt.Errorf("handle file: %v", err)
-			}
-
-			arg2, err := parser.Arg2()
-
-			if err != nil {
-				return fmt.Errorf("handle file: %v", err)
-			}
-
-			cw.WritePushPop(cmdType, arg1, arg2)
+		if err != nil {
+			return err
 		}
 	}
 
 	return err
+}
+
+func handlePushPop(cmdType int, p *parser.Parser, cw *writer.CodeWriter) error {
+	segment, err := p.Arg1()
+
+	if err != nil {
+		return fmt.Errorf("handle push or pop: %v", err)
+	}
+
+	index, err := p.Arg2()
+
+	if err != nil {
+		return fmt.Errorf("handle push or pop: %v", err)
+	}
+
+	cw.WritePushPop(cmdType, segment, index)
+	return nil
+}
+
+func handleArithmetic(p *parser.Parser, cw *writer.CodeWriter) error {
+	cmd, err := p.Arg1()
+
+	if err != nil {
+		return fmt.Errorf("handle arithmetic command: %v", err)
+	}
+
+	cw.WriteArithmetic(cmd)
+	return nil
 }
