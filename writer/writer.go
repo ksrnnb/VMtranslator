@@ -59,16 +59,24 @@ func (cw *CodeWriter) WritePushPop(cmd int, segment string, index int) {
 }
 
 func (cw *CodeWriter) writePush(segment string, index int) {
-	cw.write([]string{
-		fmt.Sprintf("@%d", index),
-		"D=A",
-	})
-
-	cw.writePushDRegister()
+	switch segment {
+	case "constant":
+		cw.writePushConstant(index)
+	case "local", "argument", "this", "that":
+		cw.writePushSegment(segment, index)
+	case "temp":
+		cw.writePushTempSegment(index)
+	}
 }
 
 func (cw *CodeWriter) writePop(segment string, index int) {
+	switch segment {
 
+	case "local", "argument", "this", "that":
+		cw.writePopSegment(segment, index)
+	case "temp":
+		cw.writePopTempSegment(index)
+	}
 }
 
 func (cw *CodeWriter) writeCommonArithmetic() {
@@ -126,6 +134,99 @@ func (cw *CodeWriter) writeNot() {
 		"@SP",
 		"A=M-1",
 		"M=!M",
+	})
+}
+
+func (cw *CodeWriter) writePushConstant(index int) {
+	cw.write([]string{
+		fmt.Sprintf("@%d", index),
+		"D=A",
+	})
+	cw.writePushDRegister()
+}
+
+// segmentのindex番地のアドレスの値を、SPにpushする
+func (cw *CodeWriter) writePushSegment(segment string, index int) {
+	var seg string
+	switch segment {
+	case "local":
+		seg = "LCL"
+	case "argument":
+		seg = "ARG"
+	case "this":
+		seg = "THIS"
+	case "that":
+		seg = "THAT"
+	}
+
+	cw.write([]string{
+		fmt.Sprintf("@%d", index),
+		"D=A",
+		fmt.Sprintf("@%s", seg),
+		"A=M+D",
+		"D=M",
+	})
+
+	cw.writePushDRegister()
+}
+
+// temp(RAM[5] ~ RAM[12]のindex番地のアドレスの値を、SPにpushする
+func (cw *CodeWriter) writePushTempSegment(index int) {
+	tempIndex := 5 + index
+
+	cw.write([]string{
+		fmt.Sprintf("@%d", tempIndex),
+		"D=M",
+	})
+
+	cw.writePushDRegister()
+}
+
+// SPの値をpopして、segmentのindex番地のアドレスに代入する
+func (cw *CodeWriter) writePopSegment(segment string, index int) {
+	var seg string
+	switch segment {
+	case "local":
+		seg = "LCL"
+	case "argument":
+		seg = "ARG"
+	case "this":
+		seg = "THIS"
+	case "that":
+		seg = "THAT"
+	}
+
+	cw.write([]string{
+		"@SP",   // はじめのRAM[0]=r0とする
+		"M=M-1", // SPをデクリメントしてデータが入っている一番上の位置に移動(r0-1)
+		"A=M",   // A = RAM[r0-1] => M = RAM[r0-1]
+		"D=M",   // D = RAM[r0-1]
+		fmt.Sprintf("@%s", seg),
+		"A=M",
+	})
+
+	for i := 0; i < index; i++ {
+		cw.write([]string{
+			"A=A+1",
+		})
+	}
+
+	cw.write([]string{
+		"M=D",
+	})
+}
+
+// SPからpopした値をtempに代入
+func (cw *CodeWriter) writePopTempSegment(index int) {
+	tempIndex := 5 + index
+
+	cw.write([]string{
+		"@SP",   // はじめのRAM[0]=r0とする
+		"M=M-1", // SPをデクリメントしてデータが入っている一番上の位置に移動(r0-1)
+		"A=M",   // A = RAM[r0-1] => M = RAM[r0-1]
+		"D=M",   // D = RAM[r0-1]
+		fmt.Sprintf("@%d", tempIndex),
+		"M=D",
 	})
 }
 
