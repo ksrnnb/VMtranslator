@@ -66,6 +66,8 @@ func (cw *CodeWriter) writePush(segment string, index int) {
 		cw.writePushSegment(segment, index)
 	case "temp":
 		cw.writePushTempSegment(index)
+	case "pointer":
+		cw.writePushPointerSegment(index)
 	}
 }
 
@@ -76,6 +78,8 @@ func (cw *CodeWriter) writePop(segment string, index int) {
 		cw.writePopSegment(segment, index)
 	case "temp":
 		cw.writePopTempSegment(index)
+	case "pointer":
+		cw.writePopPointerSegment(index)
 	}
 }
 
@@ -180,6 +184,44 @@ func (cw *CodeWriter) writePushTempSegment(index int) {
 	})
 
 	cw.writePushDRegister()
+}
+
+func (cw *CodeWriter) writePushPointerSegment(index int) {
+	switch index {
+	case 0:
+		cw.write([]string{
+			"@THIS",
+			"D=M",
+		})
+	case 1:
+		cw.write([]string{
+			"@THAT",
+			"D=M",
+		})
+	}
+	cw.writePushDRegister()
+}
+
+func (cw *CodeWriter) writePopPointerSegment(index int) {
+	cw.write([]string{
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+	})
+
+	switch index {
+	case 0:
+		cw.write([]string{
+			"@THIS",
+			"M=D",
+		})
+	case 1:
+		cw.write([]string{
+			"@THAT",
+			"M=D",
+		})
+	}
 }
 
 // SPの値をpopして、segmentのindex番地のアドレスに代入する
