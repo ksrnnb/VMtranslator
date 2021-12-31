@@ -68,6 +68,8 @@ func (cw *CodeWriter) writePush(segment string, index int) {
 		cw.writePushTempSegment(index)
 	case "pointer":
 		cw.writePushPointerSegment(index)
+	case "static":
+		cw.writePushStaticSegment(index)
 	}
 }
 
@@ -80,6 +82,8 @@ func (cw *CodeWriter) writePop(segment string, index int) {
 		cw.writePopTempSegment(index)
 	case "pointer":
 		cw.writePopPointerSegment(index)
+	case "static":
+		cw.writePopStaticSegment(index)
 	}
 }
 
@@ -202,26 +206,13 @@ func (cw *CodeWriter) writePushPointerSegment(index int) {
 	cw.writePushDRegister()
 }
 
-func (cw *CodeWriter) writePopPointerSegment(index int) {
+func (cw *CodeWriter) writePushStaticSegment(index int) {
 	cw.write([]string{
-		"@SP",
-		"M=M-1",
-		"A=M",
+		fmt.Sprintf("@%s.%d", cw.fileName, index),
 		"D=M",
 	})
 
-	switch index {
-	case 0:
-		cw.write([]string{
-			"@THIS",
-			"M=D",
-		})
-	case 1:
-		cw.write([]string{
-			"@THAT",
-			"M=D",
-		})
-	}
+	cw.writePushDRegister()
 }
 
 // SPの値をpopして、segmentのindex番地のアドレスに代入する
@@ -268,6 +259,42 @@ func (cw *CodeWriter) writePopTempSegment(index int) {
 		"A=M",   // A = RAM[r0-1] => M = RAM[r0-1]
 		"D=M",   // D = RAM[r0-1]
 		fmt.Sprintf("@%d", tempIndex),
+		"M=D",
+	})
+}
+
+func (cw *CodeWriter) writePopPointerSegment(index int) {
+	cw.write([]string{
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+	})
+
+	switch index {
+	case 0:
+		cw.write([]string{
+			"@THIS",
+			"M=D",
+		})
+	case 1:
+		cw.write([]string{
+			"@THAT",
+			"M=D",
+		})
+	}
+}
+
+func (cw *CodeWriter) writePopStaticSegment(index int) {
+	cw.write([]string{
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+	})
+
+	cw.write([]string{
+		fmt.Sprintf("@%s.%d", cw.fileName, index),
 		"M=D",
 	})
 }

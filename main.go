@@ -94,6 +94,8 @@ func handleFile(path string, cw *writer.CodeWriter) error {
 		return err
 	}
 
+	cw.SetFileName(strings.Trim(f.Name(), ".vm"))
+
 	parser := parser.NewParser(f)
 
 	for {
