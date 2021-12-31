@@ -21,10 +21,12 @@ func (cw *CodeWriter) SetFileName(fileName string) {
 }
 
 func (cw CodeWriter) WriteArithmetic(cmd string) {
+	cw.writeCommonArithmetic()
 	switch cmd {
 	case "add":
-		cw.writeAdd()
+		cw.write([]string{"D=D+M"})
 	}
+	cw.writePushDRegister()
 }
 
 func (cw CodeWriter) WritePushPop(cmd int, segment string, index int) {
@@ -48,7 +50,7 @@ func (cw *CodeWriter) writePop(segment string, index int) {
 
 }
 
-func (cw *CodeWriter) writeAdd() {
+func (cw *CodeWriter) writeCommonArithmetic() {
 	cw.write([]string{
 		"@SP",   // はじめのRAM[0]=r0とする
 		"M=M-1", // SPをデクリメントしてデータが入っている一番上の位置に移動(r0-1)
@@ -57,10 +59,7 @@ func (cw *CodeWriter) writeAdd() {
 		"@SP",   // A = 0, M = RAM[0] = r0-1
 		"M=M-1", // M = r0-2
 		"A=M",   // A = r0-2
-		"D=D+M", // D = RAM[r0-1] + RAM[r0-2]
 	})
-
-	cw.writePushDRegister()
 }
 
 // Dレジスタの値をpushする
