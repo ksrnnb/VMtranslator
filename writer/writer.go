@@ -8,28 +8,49 @@ import (
 )
 
 type CodeWriter struct {
-	out      io.Writer
-	fileName string
+	out        io.Writer
+	fileName   string
+	compNumber int
 }
 
 func NewCodeWriter(out io.Writer) *CodeWriter {
-	return &CodeWriter{out: out}
+	return &CodeWriter{out: out, compNumber: 0}
 }
 
 func (cw *CodeWriter) SetFileName(fileName string) {
 	cw.fileName = fileName
 }
 
-func (cw CodeWriter) WriteArithmetic(cmd string) {
-	cw.writeCommonArithmetic()
+func (cw *CodeWriter) WriteArithmetic(cmd string) {
 	switch cmd {
 	case "add":
-		cw.write([]string{"D=D+M"})
+		cw.writeCommonArithmetic()
+		cw.write([]string{"D=M+D"}) // M+D => stackなので右辺のDは後にpushした値。Mは先にpushした値
+		cw.writePushDRegister()
+	case "sub":
+		cw.writeCommonArithmetic()
+		cw.write([]string{"D=M-D"})
+		cw.writePushDRegister()
+	case "neg":
+		cw.writeNeg()
+	case "eq", "gt", "lt":
+		cw.writeCommonArithmetic()
+		cw.writeComparison(cmd)
+		cw.writePushDRegister()
+	case "and":
+		cw.writeCommonArithmetic()
+		cw.write([]string{"D=M&D"})
+		cw.writePushDRegister()
+	case "or":
+		cw.writeCommonArithmetic()
+		cw.write([]string{"D=M|D"})
+		cw.writePushDRegister()
+	case "not":
+		cw.writeNot()
 	}
-	cw.writePushDRegister()
 }
 
-func (cw CodeWriter) WritePushPop(cmd int, segment string, index int) {
+func (cw *CodeWriter) WritePushPop(cmd int, segment string, index int) {
 	if cmd == command.C_PUSH {
 		cw.writePush(segment, index)
 	} else if cmd == command.C_POP {
@@ -62,6 +83,52 @@ func (cw *CodeWriter) writeCommonArithmetic() {
 	})
 }
 
+func (cw *CodeWriter) writeComparison(cmd string) {
+	var assemblyCmd string
+
+	switch cmd {
+	case "eq":
+		assemblyCmd = "JEQ"
+	case "gt":
+		assemblyCmd = "JGT"
+	case "lt":
+		assemblyCmd = "JLT"
+	}
+
+	num := cw.getCompLabelNumber()
+
+	cw.write([]string{
+		"D=M-D", // M-D => stackなので右辺のDは後にpushした値。Mは先にpushした値
+		fmt.Sprintf("@comp.%d.true", num),
+		fmt.Sprintf("D;%s", assemblyCmd),
+		fmt.Sprintf("@comp.%d.false", num), // 上の式でjumpしない場合 => false
+		"0;JMP",
+		fmt.Sprintf("(comp.%d.true)", num),
+		"D=-1",
+		fmt.Sprintf("@comp.%d.fin", num),
+		"0;JMP",
+		fmt.Sprintf("(comp.%d.false)", num),
+		"D=0",
+		fmt.Sprintf("(comp.%d.fin)", num),
+	})
+}
+
+func (cw *CodeWriter) writeNeg() {
+	cw.write([]string{
+		"@SP",
+		"A=M-1",
+		"M=-M",
+	})
+}
+
+func (cw *CodeWriter) writeNot() {
+	cw.write([]string{
+		"@SP",
+		"A=M-1",
+		"M=!M",
+	})
+}
+
 // Dレジスタの値をpushする
 func (cw *CodeWriter) writePushDRegister() {
 	cw.write([]string{
@@ -83,4 +150,9 @@ func (cw *CodeWriter) write(strs []string) error {
 	}
 
 	return nil
+}
+
+func (cw *CodeWriter) getCompLabelNumber() int {
+	cw.compNumber++
+	return cw.compNumber
 }
