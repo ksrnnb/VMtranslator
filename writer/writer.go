@@ -21,6 +21,18 @@ func (cw *CodeWriter) SetFileName(fileName string) {
 	cw.fileName = fileName
 }
 
+// VM初期化
+func (cw *CodeWriter) WriteInit() {
+	cw.write([]string{
+		"@256",
+		"D=A",
+		"@SP",
+		"M=D",
+	})
+
+	cw.writeCall("Sys.init", 0)
+}
+
 func (cw *CodeWriter) WriteArithmetic(cmd string) {
 	switch cmd {
 	case "add":
@@ -325,4 +337,8 @@ func (cw *CodeWriter) write(strs []string) error {
 func (cw *CodeWriter) getCompLabelNumber() int {
 	cw.compNumber++
 	return cw.compNumber
+}
+
+func (cw *CodeWriter) writeCall(functionName string, numArgs int) {
+	// todo: implement
 }
