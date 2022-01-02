@@ -8,13 +8,14 @@ import (
 )
 
 type CodeWriter struct {
-	out        io.Writer
-	fileName   string
-	compNumber int
+	out          io.Writer
+	fileName     string
+	compNumber   int
+	returnNumber int
 }
 
 func NewCodeWriter(out io.Writer) *CodeWriter {
-	return &CodeWriter{out: out, compNumber: 0}
+	return &CodeWriter{out: out, compNumber: 0, returnNumber: 0}
 }
 
 func (cw *CodeWriter) SetFileName(fileName string) {
@@ -334,11 +335,67 @@ func (cw *CodeWriter) write(strs []string) error {
 	return nil
 }
 
+// 図8-4, 8-5 参照
+func (cw *CodeWriter) writeCall(functionName string, numArgs int) {
+	returnLabel := fmt.Sprintf("@return%s", cw.getReturnLabelNumber)
+	cw.write([]string{
+		returnLabel,
+		"D=A",
+	})
+	// 関数の呼び出し側のLCLなどを保存
+	cw.writePushDRegister()
+
+	cw.write([]string{
+		"@LCL",
+		"D=A",
+	})
+	cw.writePushDRegister()
+
+	cw.write([]string{
+		"@ARG",
+		"D=A",
+	})
+	cw.writePushDRegister()
+
+	cw.write([]string{
+		"@THIS",
+		"D=A",
+	})
+	cw.writePushDRegister()
+
+	cw.write([]string{
+		"@THAT",
+		"D=A",
+	})
+	cw.writePushDRegister()
+
+	// ARGを別の場所に
+	cw.write([]string{
+		"@SP",
+		"D=M",
+		// ARG = SP - n - 5
+		fmt.Sprintf("@%d", numArgs),
+		"D=D-A",
+		"@5",
+		"D=D-A",
+		"@ARG",
+		"M=D",
+		"@SP",
+		"D=M",
+		"@LCL",
+		"M=D",
+		fmt.Sprintf("@%s", functionName),
+		"0;JMP",
+		fmt.Sprintf("(%s)", returnLabel),
+	})
+}
+
 func (cw *CodeWriter) getCompLabelNumber() int {
 	cw.compNumber++
 	return cw.compNumber
 }
 
-func (cw *CodeWriter) writeCall(functionName string, numArgs int) {
-	// todo: implement
+func (cw *CodeWriter) getReturnLabelNumber() int {
+	cw.returnNumber++
+	return cw.returnNumber
 }
