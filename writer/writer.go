@@ -373,20 +373,49 @@ func (cw *CodeWriter) writeCall(functionName string, numArgs int) {
 	cw.write([]string{
 		"@SP",
 		"D=M",
-		// ARG = SP - n - 5
+		"@5",
+		// return label, LCL, ARGなどを格納したため、その分だけSPを戻す
+		"D=D-A",
+		// さらに関数の引数分だけ戻す。関数の引数は呼び出し時には、既にSPにpushされている。
 		fmt.Sprintf("@%d", numArgs),
 		"D=D-A",
-		"@5",
-		"D=D-A",
+		// ARG = SP - n - 5 => 既にSPにpushされている引数のはじめのアドレス
 		"@ARG",
 		"M=D",
 		"@SP",
 		"D=M",
+		// ローカル変数はSPから始まる
 		"@LCL",
 		"M=D",
+		// 関数名ラベルのところにjump
 		fmt.Sprintf("@%s", functionName),
 		"0;JMP",
+		// returnされたらここに戻る
 		fmt.Sprintf("(%s)", returnLabel),
+	})
+}
+
+func (cw *CodeWriter) WriteGoto(label string) {
+	cw.write([]string{
+		fmt.Sprintf("@%s", label),
+		"0;JMP",
+	})
+}
+
+func (cw *CodeWriter) WriteIf(label string) {
+	cw.write([]string{
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+		fmt.Sprintf("@%s", label),
+		"D;JNE",
+	})
+}
+
+func (cw *CodeWriter) WriteLabel(label string) {
+	cw.write([]string{
+		fmt.Sprintf("(%s)", label),
 	})
 }
 

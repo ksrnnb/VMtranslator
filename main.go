@@ -46,13 +46,18 @@ func run() error {
 	cw := writer.NewCodeWriter(file)
 
 	if fileInfo.IsDir() {
-		dirFunc(args[1], cw)
+		err = dirFunc(args[1], cw)
 	} else {
 		if !isVmFile(args[1]) {
 			return fmt.Errorf("%s: file is not vm file: %s", args[0], args[1])
 		}
 
-		handleFile(args[1], cw)
+		err = handleFile(args[1], cw)
+		fmt.Println(err)
+	}
+
+	if err != nil {
+		fmt.Errorf("%s: %v", args[0], err)
 	}
 
 	return nil
@@ -102,12 +107,13 @@ func handleFile(path string, cw *writer.CodeWriter) error {
 		parser.Advance()
 
 		if !parser.HasMoreCommands() {
+			fmt.Println("finish")
 			break
 		}
 
 		cmdType, err := parser.CommandType()
 
-		if err != nil {
+		if err != nil {			
 			return fmt.Errorf("handle file: %v", err)
 		}
 
@@ -116,6 +122,10 @@ func handleFile(path string, cw *writer.CodeWriter) error {
 			err = handlePushPop(cmdType, parser, cw)
 		case command.C_ARITHMETIC:
 			err = handleArithmetic(parser, cw)
+		case command.C_LABEL, command.C_GOTO, command.C_IF:
+			err = handleProgramFlow(cmdType, parser, cw)
+		case command.C_RETURN, command.C_FUNCTION, command.C_CALL:
+			err = handleSubRoutine(cmdType, parser, cw)
 		}
 
 		if err != nil {
@@ -123,7 +133,7 @@ func handleFile(path string, cw *writer.CodeWriter) error {
 		}
 	}
 
-	return err
+	return nil
 }
 
 func handlePushPop(cmdType int, p *parser.Parser, cw *writer.CodeWriter) error {
@@ -151,5 +161,30 @@ func handleArithmetic(p *parser.Parser, cw *writer.CodeWriter) error {
 	}
 
 	cw.WriteArithmetic(cmd)
+	return nil
+}
+
+func handleProgramFlow(cmdType int, p *parser.Parser, cw *writer.CodeWriter) error {
+	label, err := p.Arg1()
+
+	if err != nil {
+		return fmt.Errorf("handle program flow: %v", err)
+	}
+
+
+	switch cmdType {
+	case command.C_GOTO:
+		cw.WriteGoto(label)
+	case command.C_IF:
+		cw.WriteIf(label)
+	case command.C_LABEL:
+		cw.WriteLabel(label)
+	}
+
+	return nil
+}
+
+func handleSubRoutine(cmdType int, p *parser.Parser, cw *writer.CodeWriter) error {
+	// do something
 	return nil
 }
