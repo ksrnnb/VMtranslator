@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/ksrnnb/VMtranslator/command"
@@ -54,7 +53,6 @@ func run() error {
 		}
 
 		err = handleFile(args[1], cw)
-		fmt.Println(err)
 	}
 
 	if err != nil {
@@ -108,7 +106,6 @@ func handleFile(path string, cw *writer.CodeWriter) error {
 		parser.Advance()
 
 		if !parser.HasMoreCommands() {
-			fmt.Println("finish")
 			break
 		}
 
@@ -196,23 +193,18 @@ func handleSubRoutine(cmdType int, p *parser.Parser, cw *writer.CodeWriter) erro
 		return fmt.Errorf("handle sub routine: %v", err)
 	}
 
-	arg2, err := p.Arg1()
+	arg2, err := p.Arg2()
 
-	if err != nil {
-		return fmt.Errorf("handle sub routine: %v", err)
-	}
-
-	intArg2, err := strconv.Atoi(arg2)
 	if err != nil {
 		return fmt.Errorf("handle sub routine: %v", err)
 	}
 
 	switch cmdType {
 	case command.C_FUNCTION:
-		cw.WriteFunction(functionName, intArg2)
+		cw.WriteFunction(functionName, arg2)
 	case command.C_CALL:
 
-		cw.WriteCall(functionName, intArg2)
+		cw.WriteCall(functionName, arg2)
 	}
 
 	return nil
