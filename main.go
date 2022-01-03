@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/ksrnnb/VMtranslator/command"
@@ -57,7 +58,7 @@ func run() error {
 	}
 
 	if err != nil {
-		fmt.Errorf("%s: %v", args[0], err)
+		return fmt.Errorf("%s: %v", args[0], err)
 	}
 
 	return nil
@@ -113,7 +114,7 @@ func handleFile(path string, cw *writer.CodeWriter) error {
 
 		cmdType, err := parser.CommandType()
 
-		if err != nil {			
+		if err != nil {
 			return fmt.Errorf("handle file: %v", err)
 		}
 
@@ -171,7 +172,6 @@ func handleProgramFlow(cmdType int, p *parser.Parser, cw *writer.CodeWriter) err
 		return fmt.Errorf("handle program flow: %v", err)
 	}
 
-
 	switch cmdType {
 	case command.C_GOTO:
 		cw.WriteGoto(label)
@@ -185,6 +185,35 @@ func handleProgramFlow(cmdType int, p *parser.Parser, cw *writer.CodeWriter) err
 }
 
 func handleSubRoutine(cmdType int, p *parser.Parser, cw *writer.CodeWriter) error {
-	// do something
+	if cmdType == command.C_RETURN {
+		cw.WriteReturn()
+		return nil
+	}
+
+	functionName, err := p.Arg1()
+
+	if err != nil {
+		return fmt.Errorf("handle sub routine: %v", err)
+	}
+
+	arg2, err := p.Arg1()
+
+	if err != nil {
+		return fmt.Errorf("handle sub routine: %v", err)
+	}
+
+	intArg2, err := strconv.Atoi(arg2)
+	if err != nil {
+		return fmt.Errorf("handle sub routine: %v", err)
+	}
+
+	switch cmdType {
+	case command.C_FUNCTION:
+		cw.WriteFunction(functionName, intArg2)
+	case command.C_CALL:
+
+		cw.WriteCall(functionName, intArg2)
+	}
+
 	return nil
 }

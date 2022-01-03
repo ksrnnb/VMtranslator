@@ -31,7 +31,7 @@ func (cw *CodeWriter) WriteInit() {
 		"M=D",
 	})
 
-	cw.writeCall("Sys.init", 0)
+	cw.WriteCall("Sys.init", 0)
 }
 
 func (cw *CodeWriter) WriteArithmetic(cmd string) {
@@ -336,8 +336,8 @@ func (cw *CodeWriter) write(strs []string) error {
 }
 
 // 図8-4, 8-5 参照
-func (cw *CodeWriter) writeCall(functionName string, numArgs int) {
-	returnLabel := fmt.Sprintf("@return%s", cw.getReturnLabelNumber)
+func (cw *CodeWriter) WriteCall(functionName string, numArgs int) {
+	returnLabel := fmt.Sprintf("@return%d", cw.getReturnLabelNumber())
 	cw.write([]string{
 		returnLabel,
 		"D=A",
@@ -417,6 +417,21 @@ func (cw *CodeWriter) WriteLabel(label string) {
 	cw.write([]string{
 		fmt.Sprintf("(%s)", label),
 	})
+}
+
+func (cw *CodeWriter) WriteFunction(functionName string, numLocals int) {
+	cw.write([]string{
+		fmt.Sprintf("(%s)", functionName),
+		"D=0",
+	})
+
+	for i := 0; i < numLocals; i++ {
+		cw.writePushDRegister()
+	}
+}
+
+func (cw *CodeWriter) WriteReturn() {
+	// do something
 }
 
 func (cw *CodeWriter) getCompLabelNumber() int {
