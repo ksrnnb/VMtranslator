@@ -431,7 +431,62 @@ func (cw *CodeWriter) WriteFunction(functionName string, numLocals int) {
 }
 
 func (cw *CodeWriter) WriteReturn() {
-	// do something
+	cw.write([]string{
+		"@LCL",
+		"D=M",
+		"@R13", // R13=FRAME
+		"M=D",  // FRAME=LCL
+
+		"@5",
+		"D=A",
+		"@R13",
+		"A=M-D", // *(FRAME-5) = *(LCL-5) = return address
+		"D=M",
+		"@R14",
+		"M=D", // R14 = *(FRAME-5) = return address
+
+		"@SP", // pop
+		"M=M-1",
+		"A=M",
+		"D=M", // popした値をDに代入（つまり、戻り値をDに代入）
+		"@ARG",
+		"A=M",
+		"M=D", // 関数実行時はARGだったアドレスに関数の戻り値を代入
+		// このあたりは図8-8を参照。
+
+		"@ARG",
+		"D=M+1", // ARGの次のアドレス
+		"@SP",
+		"M=D", // SPの位置をARGの次のアドレスに指定
+
+		"@R13",
+		"AM=M-1", // LCL-1 => 呼び出し元のTHATのアドレスが入っている
+		"D=M",
+		"@THAT",
+		"M=D",
+
+		"@R13",
+		"AM=M-1", // LCL-2 => 呼び出し元のTHISのアドレスが入っている
+		"D=M",
+		"@THIS",
+		"M=D",
+
+		"@R13",
+		"AM=M-1", // LCL-3 => 呼び出し元のARGのアドレスが入っている
+		"D=M",
+		"@ARG",
+		"M=D",
+
+		"@R13",
+		"AM=M-1", // LCL-4 => 呼び出し元のLCLのアドレスが入っている
+		"D=M",
+		"@LCL",
+		"M=D",
+
+		"@R14",
+		"A=M", // return address
+		"0;JMP",
+	})
 }
 
 func (cw *CodeWriter) getCompLabelNumber() int {
