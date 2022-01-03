@@ -337,9 +337,9 @@ func (cw *CodeWriter) write(strs []string) error {
 
 // 図8-4, 8-5 参照
 func (cw *CodeWriter) WriteCall(functionName string, numArgs int) {
-	returnLabel := fmt.Sprintf("@return%d", cw.getReturnLabelNumber())
+	returnLabel := fmt.Sprintf("return%d", cw.getReturnLabelNumber())
 	cw.write([]string{
-		returnLabel,
+		fmt.Sprintf("@%s", returnLabel),
 		"D=A",
 	})
 	// 関数の呼び出し側のLCLなどを保存
