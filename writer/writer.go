@@ -3,6 +3,7 @@ package writer
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/ksrnnb/VMtranslator/command"
 )
@@ -20,7 +21,9 @@ func NewCodeWriter(out io.Writer) *CodeWriter {
 }
 
 func (cw *CodeWriter) SetFileName(fileName string) {
-	cw.fileName = fileName
+	names := strings.Split(fileName, "/")
+	name := names[len(names)-1]
+	cw.fileName = name
 }
 
 // VM初期化
