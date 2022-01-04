@@ -348,25 +348,25 @@ func (cw *CodeWriter) WriteCall(functionName string, numArgs int) {
 
 	cw.write([]string{
 		"@LCL",
-		"D=A",
+		"D=M",
 	})
 	cw.writePushDRegister()
 
 	cw.write([]string{
 		"@ARG",
-		"D=A",
+		"D=M",
 	})
 	cw.writePushDRegister()
 
 	cw.write([]string{
 		"@THIS",
-		"D=A",
+		"D=M",
 	})
 	cw.writePushDRegister()
 
 	cw.write([]string{
 		"@THAT",
-		"D=A",
+		"D=M",
 	})
 	cw.writePushDRegister()
 
