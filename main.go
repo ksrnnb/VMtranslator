@@ -44,6 +44,7 @@ func run() error {
 	defer file.Close()
 
 	cw := writer.NewCodeWriter(file)
+	cw.WriteInit()
 
 	if fileInfo.IsDir() {
 		err = dirFunc(args[1], cw)
