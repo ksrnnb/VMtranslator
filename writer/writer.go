@@ -8,10 +8,11 @@ import (
 )
 
 type CodeWriter struct {
-	out          io.Writer
-	fileName     string
-	compNumber   int
-	returnNumber int
+	out                 io.Writer
+	fileName            string
+	compNumber          int
+	returnNumber        int
+	currentFunctionName string
 }
 
 func NewCodeWriter(out io.Writer) *CodeWriter {
@@ -397,7 +398,7 @@ func (cw *CodeWriter) WriteCall(functionName string, numArgs int) {
 
 func (cw *CodeWriter) WriteGoto(label string) {
 	cw.write([]string{
-		fmt.Sprintf("@%s", label),
+		fmt.Sprintf("@%s", cw.getLabelName(label)),
 		"0;JMP",
 	})
 }
@@ -408,14 +409,14 @@ func (cw *CodeWriter) WriteIf(label string) {
 		"M=M-1",
 		"A=M",
 		"D=M",
-		fmt.Sprintf("@%s", label),
+		fmt.Sprintf("@%s", cw.getLabelName(label)),
 		"D;JNE",
 	})
 }
 
 func (cw *CodeWriter) WriteLabel(label string) {
 	cw.write([]string{
-		fmt.Sprintf("(%s)", label),
+		fmt.Sprintf("(%s)", cw.getLabelName(label)),
 	})
 }
 
@@ -428,6 +429,8 @@ func (cw *CodeWriter) WriteFunction(functionName string, numLocals int) {
 	for i := 0; i < numLocals; i++ {
 		cw.writePushDRegister()
 	}
+
+	cw.currentFunctionName = functionName
 }
 
 func (cw *CodeWriter) WriteReturn() {
@@ -497,4 +500,12 @@ func (cw *CodeWriter) getCompLabelNumber() int {
 func (cw *CodeWriter) getReturnLabelNumber() int {
 	cw.returnNumber++
 	return cw.returnNumber
+}
+
+func (cw *CodeWriter) getLabelName(label string) string {
+	if cw.currentFunctionName == "" {
+		return fmt.Sprintf("MainFunction$%s", label)
+	}
+
+	return fmt.Sprintf("%s$%s", cw.currentFunctionName, label)
 }
