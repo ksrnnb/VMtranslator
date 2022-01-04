@@ -119,6 +119,6 @@ func (p Parser) Arg2() (int, error) {
 	}
 
 	commands := strings.Split(p.currentCommand, " ")
-	trimmed := strings.Trim(commands[2], "\t")
-	return strconv.Atoi(trimmed)
+	trimmed := strings.Split(commands[2], "\t")
+	return strconv.Atoi(trimmed[0])
 }
